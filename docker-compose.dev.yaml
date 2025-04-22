@@ -3,19 +3,20 @@ services:
     build:
       context: ./frame
       dockerfile: Dockerfile
+    ports:
+      - "6789:3000"
     environment:
       PORT: 3000
     depends_on:
       - studio
       - paper
-    container_name: clutter
-    labels:
-      - traefik.enable=true
 
   studio:
     build:
       context: ./studio
       dockerfile: Dockerfile
+    ports:
+      - "6788:8081"
     environment:
       BIND_ADDRESS: 0.0.0.0
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/db
@@ -29,15 +30,13 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    container_name: studio
-    labels:
-      - traefik.enable=true
-
 
   paper:
     build:
       context: ./paper
       dockerfile: Dockerfile
+    ports:
+      - "6787:8081"
     environment:
       BIND_ADDRESS: 0.0.0.0
       DATABASE_URL: clickhouse://clickhouse:9000?username=${CLICKHOUSE_USER}&password=${CLICKHOUSE_PASSWORD}&database=db
@@ -53,9 +52,6 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    container_name: paper
-    labels:
-      - traefik.enable=true
 
   db:
     image: postgres:16-alpine
