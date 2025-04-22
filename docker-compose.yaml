@@ -30,6 +30,8 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - clutter-network
 
@@ -52,6 +54,8 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - clutter-network
 
@@ -70,6 +74,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  migrate:
+    image: migrate/migrate
+    networks:
+      - clutter-network
+    volumes:
+      - ./studio/migrations:/migrations
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/db?sslmode=disable",
+        "up",
+      ]
+    depends_on:
+      db:
+        condition: service_healthy
 
   clickhouse:
     image: clickhouse/clickhouse-server:25.3.2-alpine
