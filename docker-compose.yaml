@@ -1,0 +1,121 @@
+services:
+  frame:
+    build:
+      context: ./frame
+      dockerfile: Dockerfile
+    ports:
+      - "6789:3000"
+    environment:
+      PORT: 3000
+    depends_on:
+      - studio
+      - paper
+    networks:
+      - clutter-network
+
+  studio:
+    build:
+      context: ./studio
+      dockerfile: Dockerfile
+    ports:
+      - "6788:8081"
+    environment:
+      BIND_ADDRESS: 0.0.0.0
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/db
+      CLICKHOUSE_URL: clickhouse://clickhouse:9000?username=${CLICKHOUSE_USER}&password=${CLICKHOUSE_PASSWORD}&database=db
+      PORT: 8081
+      JWT_SECRET: secret
+    depends_on:
+      db:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - clutter-network
+
+  paper:
+    build:
+      context: ./paper
+      dockerfile: Dockerfile
+    ports:
+      - "6787:8081"
+    environment:
+      BIND_ADDRESS: 0.0.0.0
+      DATABASE_URL: clickhouse://clickhouse:9000?username=${CLICKHOUSE_USER}&password=${CLICKHOUSE_PASSWORD}&database=db
+      POSTGRES_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/db
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      PORT: 8080
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - clutter-network
+
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: db
+    networks:
+      - clutter-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.3.2-alpine
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_log:/var/log/clickhouse-server
+      - ./clickhouse/init:/docker-entrypoint-initdb.d
+    networks:
+      - clutter-network
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+
+  redis:
+    image: redis:7-alpine
+    command:
+      - /bin/sh
+      - -c
+      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
+    volumes:
+      - redis_data:/data
+    networks:
+      - clutter-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+volumes:
+  db_data:
+  clickhouse_data:
+  clickhouse_log:
+  redis_data:
+
+networks:
+  clutter-network:
+    driver: bridge
