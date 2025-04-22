@@ -1,12 +1,16 @@
 [submodule "studio"]
 	path = studio
 	url = git@github.com:ThEditor/clutter-studio.git
+	url = https://github.com/ThEditor/clutter-studio.git
 [submodule "paper"]
 	path = paper
 	url = git@github.com:ThEditor/clutter-paper.git
+	url = https://github.com/ThEditor/clutter-paper.git
 [submodule "ink"]
 	path = ink
 	url = git@github.com:ThEditor/clutter-ink.git
+	url = https://github.com/ThEditor/clutter-ink.git
 [submodule "frame"]
 	path = frame
 	url = git@github.com:ThEditor/clutter-frame.git
+	url = https://github.com/ThEditor/clutter-frame.git
