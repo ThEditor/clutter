@@ -41,7 +41,7 @@ services:
       context: ./paper
       dockerfile: Dockerfile
     ports:
-      - "6787:8081"
+      - "6787:8080"
     environment:
       BIND_ADDRESS: 0.0.0.0
       DATABASE_URL: clickhouse://clickhouse:9000?username=${CLICKHOUSE_USER}&password=${CLICKHOUSE_PASSWORD}&database=db
