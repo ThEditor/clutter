@@ -1,0 +1,51 @@
+config:
+  target: "http://localhost:6787"
+  phases:
+    - duration: 30
+      arrivalRate: 80
+      rampTo: 320
+      name: Warm up the API
+    - duration: 60
+      arrivalRate: 320
+      rampTo: 430
+      name: Ramp up to peak load
+    - duration: 120
+      arrivalRate: 430
+      name: Sustained peak load
+scenarios:
+  - name: Valid Hit
+    weight: 7
+    flow:
+      - loop:
+          - post:
+              url: "/api/event"
+              json:
+                visitor_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+                site_id: "97812340-7536-4713-a862-aa23cf3e5744"
+                referrer: "https://www.google.com/"
+                page: "/home"
+        count: 100
+  - name: Fake Hit
+    weight: 2
+    flow:
+      - loop:
+          - post:
+              url: "/api/event"
+              json:
+                visitor_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+                site_id: "22212340-7536-3333-a862-aa23cf3e5744"
+                referrer: "fake_referrer"
+                page: "/fake_page"
+        count: 100
+  - name: Invalid Hit
+    weight: 1
+    flow:
+      - loop:
+          - post:
+              url: "/api/event"
+              json:
+                visitor_user_agent: ""
+                site_id: ""
+                referrer: ""
+                page: ""
+        count: 100
